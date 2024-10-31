@@ -2,14 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  list-style: none;
+html,
+body,
+#root {
+  @apply bg-gray-800 text-white box-border m-0 p-0 list-none;
 }
 
 button {
-  background: none;
-  border: none;
+  /* background: none; */
+  /* border: none; */
 }
