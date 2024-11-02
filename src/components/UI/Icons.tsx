@@ -7,12 +7,14 @@ const icons = {
 }
 
 interface IIcons {
-    iconName: keyof typeof icons
+    iconName: keyof typeof icons,
+    styles?: string
 }
 
-const Icons = ({ iconName }: IIcons) => {
+const Icons = ({ iconName, styles }: IIcons) => {
     const Icon = icons[iconName] as React.FunctionComponent<React.SVGProps<SVGSVGElement>>
-    return <Icon />
+    return <Icon className={styles} />
+
 }
 
 export default Icons;
