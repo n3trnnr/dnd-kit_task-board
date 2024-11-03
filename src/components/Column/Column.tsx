@@ -3,8 +3,12 @@ import { IColumnProps } from "./Column.props";
 import styles from './Column.module.css'
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useState } from "react";
 
-const Column = ({ id, title, deleteColumn }: IColumnProps) => {
+const Column = ({ id, title, deleteColumn, changeTitle }: IColumnProps) => {
+
+    //Состояние для возможности отредактировать заголовок доски
+    const [editMode, setEditMode] = useState(false)
 
     const { attributes,
         listeners,
@@ -20,7 +24,8 @@ const Column = ({ id, title, deleteColumn }: IColumnProps) => {
                 title: title
             },
             type: 'Column'
-        }
+        },
+        disabled: editMode//При редактировании заголовка доски, перетаскиевание становится не активным
     })
 
     const style = {
@@ -64,6 +69,8 @@ const Column = ({ id, title, deleteColumn }: IColumnProps) => {
         bg-board-bg-color
         ">
             <div
+                //Двойной клик для возможности отредактировать заголовок доски
+                onDoubleClick={() => setEditMode(true)}
                 {...listeners}
                 {...attributes}
                 className="
@@ -82,7 +89,20 @@ const Column = ({ id, title, deleteColumn }: IColumnProps) => {
                     <div className="
                 flex justify-center items-center
             ">0</div>
-                    {title}
+                    {/*Условие для редактирование заголовка и отображение заголовка*/}
+                    {!editMode ? title :
+                        <input
+                            className="bg-board-bg-color focus: outline-rose-500 rounded-md outline-none font-normal px-2"
+                            autoFocus
+                            onChange={(event) => changeTitle!(event.target.value, id)}
+                            defaultValue={title}
+                            onBlur={() => setEditMode(false)}
+                            onKeyDown={(event) => {
+                                if (event.code !== 'Enter') return;
+                                setEditMode(false)
+                            }}
+                        />
+                    }
                 </h3>
                 <button
                     onClick={() => deleteColumn(id)}

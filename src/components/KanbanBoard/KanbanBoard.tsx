@@ -76,6 +76,17 @@ const KanbanBoard = () => {
         )
     }
 
+    //Редактирование заголовка доски
+    const handleChangeTitle = (title: string, id: TId) => {
+        const editedColumnTitle = columns.map((column) => {
+            if (column.id !== id) {
+                return column
+            }
+            return { ...column, title: title }
+        })
+        setColumns(editedColumnTitle)
+    }
+
     return (
         <div className="
             w-full min-h-screen
@@ -85,39 +96,42 @@ const KanbanBoard = () => {
             overflow-x-auto overflow-y-hidden
             "
         >
-            {/*Контекст для работы dnd-kit*/}
-            <DndContext
-                collisionDetection={closestCorners}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                sensors={sensors}
-            >
-                {/*Контекст который предоставляет данные для useSortable*/}
-                <SortableContext items={columns}>
-                    {Boolean(columns.length) && columns.map(column => (
-                        <Column
-                            key={column.id}
-                            id={column.id}
-                            title={column.title}
-                            deleteColumn={handleDeleteColumn}
-                        />
-                    ))}
-                </SortableContext>
+            <div className="flex gap-x-5">
+                {/*Контекст для работы dnd-kit*/}
+                <DndContext
+                    collisionDetection={closestCorners}
+                    onDragStart={onDragStart}
+                    onDragEnd={onDragEnd}
+                    sensors={sensors}
+                >
+                    {/*Контекст который предоставляет данные для useSortable*/}
+                    <SortableContext items={columns}>
+                        {Boolean(columns.length) && columns.map(column => (
+                            <Column
+                                key={column.id}
+                                id={column.id}
+                                title={column.title}
+                                deleteColumn={handleDeleteColumn}
+                                changeTitle={handleChangeTitle}
+                            />
+                        ))}
+                    </SortableContext>
 
-                {//createPortal - функция создает внепоточный реакт элемент встраиваемый в document.body
-                    createPortal(<DragOverlay>
-                        {/*Создани оверлея активной доки*/}
-                        {activeColumn && <Column
-                            key={activeColumn.id}
-                            title={activeColumn.title}
-                            id={activeColumn.id}
-                            deleteColumn={handleDeleteColumn}
-                        />}
-                    </DragOverlay>,
-                        document.body
-                    )}
+                    {//createPortal - функция создает внепоточный реакт элемент встраиваемый в document.body
+                        createPortal(<DragOverlay>
+                            {/*Создани оверлея активной доки*/}
+                            {activeColumn && <Column
+                                key={activeColumn.id}
+                                title={activeColumn.title}
+                                id={activeColumn.id}
+                                deleteColumn={handleDeleteColumn}
+                            />}
+                        </DragOverlay>,
+                            document.body
+                        )}
 
-            </DndContext>
+                </DndContext>
+            </div>
 
             <div className="m-auto">
                 <button
