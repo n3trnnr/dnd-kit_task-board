@@ -3,24 +3,31 @@ import { IColumnProps } from "./Column.props";
 import styles from './Column.module.css'
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useState } from "react";
+import Task from "../Task/Task";
 
-const Column = ({ id, title, deleteColumn }: IColumnProps) => {
+const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTask }: IColumnProps) => {
 
-    const { attributes,
+    //Состояние для возможности отредактировать заголовок доски
+    const [editMode, setEditMode] = useState(false)
+
+    const {
+        attributes,
         listeners,
         setNodeRef,
         transform,
         transition,
         isDragging //Если доска активная то возвращает true
     } = useSortable({
-        id,
+        id: column.id,
         data: {
             column: {
-                id: id,
-                title: title
+                id: column.id,
+                title: column.title
             },
             type: 'Column'
-        }
+        },
+        disabled: editMode//При редактировании заголовка доски, перетаскиевание становится не активным
     })
 
     const style = {
@@ -43,9 +50,7 @@ const Column = ({ id, title, deleteColumn }: IColumnProps) => {
         border-2
         border-rose-500
         bg-board-bg-color
-        ">
-
-            </div>
+        "/>
         )
     }
 
@@ -53,6 +58,8 @@ const Column = ({ id, title, deleteColumn }: IColumnProps) => {
         <div
             ref={setNodeRef}
             style={style}
+            {...listeners}
+            {...attributes}
             className="
         w-[350px]
         h-[500px]
@@ -64,8 +71,10 @@ const Column = ({ id, title, deleteColumn }: IColumnProps) => {
         bg-board-bg-color
         ">
             <div
-                {...listeners}
-                {...attributes}
+                //Двойной клик для возможности отредактировать заголовок доски
+                onDoubleClick={() => setEditMode(true)}
+                // {...listeners}
+                // {...attributes}
                 className="
             flex justify-between items-center
             h-[60px] w-full
@@ -79,13 +88,24 @@ const Column = ({ id, title, deleteColumn }: IColumnProps) => {
             text-md font-bold
             flex justify-center items-center gap-x-3
             ">
-                    <div className="
-                flex justify-center items-center
-            ">0</div>
-                    {title}
+                    <div className="flex justify-center items-center">{tasks.length}</div>
+                    {/*Условие для редактирование заголовка и отображение заголовка*/}
+                    {!editMode ? column.title :
+                        <input
+                            className="bg-board-bg-color focus: outline-rose-500 rounded-md outline-none font-normal px-2"
+                            autoFocus
+                            onChange={(event) => changeTitle!(event.target.value, column.id)}
+                            defaultValue={column.title}
+                            onBlur={() => setEditMode(false)}
+                            onKeyDown={(event) => {
+                                if (event.code !== 'Enter') return;
+                                setEditMode(false)
+                            }}
+                        />
+                    }
                 </h3>
                 <button
-                    onClick={() => deleteColumn(id)}
+                    onClick={() => deleteColumn(column.id)}
                     className="
                     size-7 
                     rounded-md
@@ -94,8 +114,34 @@ const Column = ({ id, title, deleteColumn }: IColumnProps) => {
                 "><Icons iconName="trash" styles={`${styles['icon']}`} /></button>
             </div>
 
-            <div className="flex flex-grow">Список задач</div>
-            <div className="flex justify-between items-center gap-x-2 mb-5"><Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить задачу</div>
+            <div className="flex flex-grow flex-col gap-5 overflow-x-hidden overflow-y-auto p-2 w-full">
+                {Boolean(tasks.length) && tasks.map((task) => (
+                    <Task
+                        key={task.id}
+                        task={task}
+                        deleteTask={deleteTask}
+                    />
+                ))}
+            </div>
+
+            <div
+                onClick={() => createTask!(column.id)}
+                className="
+                flex justify-center            
+            w-full 
+            p-3
+            border-4 
+            text-rose-500
+            border-board-bg-color 
+            rounded-b-lg rounded-t-none
+            hover:bg-main-bg-color hover:text-white
+            cursor-pointer
+            ">
+                <button className="flex justify-between items-center gap-x-2">
+                    <Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить задачу
+                </button>
+            </div>
+
         </div>
     );
 }

@@ -8,6 +8,24 @@ body,
   @apply bg-gray-800 text-white box-border m-0 p-0 list-none;
 }
 
+::-webkit-scrollbar {
+  min-width: 4px;
+}
+
+/*Высота перетаскиваемого элемента*/
+::-webkit-scrollbar:horizontal {
+  height: 8px;
+}
+
+::-webkit-scrollbar:vertical {
+  width: 4px;
+}
+
+/*индикатор прокрутки, перетаскиваемый элемент*/
+::-webkit-scrollbar-thumb {
+  @apply bg-rose-900 rounded-xl
+}
+
 button {
   /* background: none; */
   /* border: none; */

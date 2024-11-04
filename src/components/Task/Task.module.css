@@ -1,7 +1,7 @@
-.icon,
-.icon-plus {
+.icon {
     width: 20px;
     height: auto;
+    opacity: 0;
 }
 
 .icon path {
@@ -17,10 +17,8 @@ button:focus .icon path {
     stroke: rgb(244 63 94);
 }
 
-.icon-plus path {
-    fill: #f43f5e;
-}
-
-div:hover>button .icon-plus path {
-    fill: white;
+div:hover>button .icon,
+div:focus>button .icon,
+button:focus .icon {
+    opacity: 100;
 }

@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { IColumn, TId } from "./types";
+import { IColumn, ITask, TId } from "./types";
 import Column from "../Column/Column";
 import Icons from "../UI/Icons";
 import styles from './KanbanBoard.module.css'
 
-import { closestCorners, DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { closestCorners, DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
 
 const KanbanBoard = () => {
     const [columns, setColumns] = useState<IColumn[]>([])
     const [activeColumn, setActiveColumn] = useState<IColumn | null>(null)
-    // console.log('activeColumn', activeColumn);
+    const [tasks, setTasks] = useState<ITask[]>([])
 
     const sensors = useSensors(
         useSensor(PointerSensor, {//Решение проблемы с удалением доски
@@ -76,6 +76,35 @@ const KanbanBoard = () => {
         )
     }
 
+    //Редактирование заголовка доски
+    const handleChangeTitle = (title: string, id: TId) => {
+        const editedColumnTitle = columns.map((column) => {
+            if (column.id !== id) {
+                return column
+            }
+            return { ...column, title: title }
+        })
+        setColumns(editedColumnTitle)
+    }
+
+    //Создание новой задачи
+    const handleCreateTask = (columnId: TId) => {
+        const newTask: ITask = {
+            id: tasks.length + 1,
+            columnId: columnId,
+            content: `Задача ${tasks.length + 1}`
+        }
+
+        setTasks([...tasks, newTask])
+    }
+
+    //Удаление задачи
+    const handleDeleteTask = (id: TId) => {
+        setTasks((tasks) => {
+            return tasks.filter((task) => task.id !== id)
+        })
+    }
+
     return (
         <div className="
             w-full min-h-screen
@@ -83,41 +112,48 @@ const KanbanBoard = () => {
             px-[40px]
             flex items-center gap-5
             overflow-x-auto overflow-y-hidden
-            "
-        >
-            {/*Контекст для работы dnd-kit*/}
-            <DndContext
-                collisionDetection={closestCorners}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                sensors={sensors}
-            >
-                {/*Контекст который предоставляет данные для useSortable*/}
-                <SortableContext items={columns}>
-                    {Boolean(columns.length) && columns.map(column => (
-                        <Column
-                            key={column.id}
-                            id={column.id}
-                            title={column.title}
-                            deleteColumn={handleDeleteColumn}
-                        />
-                    ))}
-                </SortableContext>
+            ">
+            <div className="flex gap-x-5">
+                {/*Контекст для работы dnd-kit*/}
+                <DndContext
+                    collisionDetection={closestCorners}
+                    onDragStart={onDragStart}
+                    onDragEnd={onDragEnd}
+                    sensors={sensors}
+                >
+                    {/*Контекст который предоставляет данные для useSortable*/}
+                    <SortableContext items={columns}>
+                        {Boolean(columns.length) && columns.map(column => (
+                            <Column
+                                key={column.id}
+                                column={column}
+                                deleteColumn={handleDeleteColumn}
+                                changeTitle={handleChangeTitle}
+                                createTask={handleCreateTask}
+                                tasks={tasks.filter((task) => { return task.columnId === column.id })}
+                                deleteTask={handleDeleteTask}
+                            />
+                        ))}
+                    </SortableContext>
 
-                {//createPortal - функция создает внепоточный реакт элемент встраиваемый в document.body
-                    createPortal(<DragOverlay>
-                        {/*Создани оверлея активной доки*/}
-                        {activeColumn && <Column
-                            key={activeColumn.id}
-                            title={activeColumn.title}
-                            id={activeColumn.id}
-                            deleteColumn={handleDeleteColumn}
-                        />}
-                    </DragOverlay>,
-                        document.body
-                    )}
+                    {//createPortal - функция создает внепоточный реакт элемент встраиваемый в document.body
+                        createPortal(<DragOverlay>
+                            {/*Создани оверлея активной доки*/}
+                            {activeColumn && <Column
+                                key={activeColumn.id}
+                                column={activeColumn}
+                                deleteColumn={handleDeleteColumn}
+                                changeTitle={handleChangeTitle}
+                                createTask={handleCreateTask}
+                                tasks={tasks.filter((task) => { return task.columnId === activeColumn.id })}
+                                deleteTask={handleDeleteTask}
+                            />}
+                        </DragOverlay>,
+                            document.body
+                        )}
 
-            </DndContext>
+                </DndContext>
+            </div>
 
             <div className="m-auto">
                 <button
