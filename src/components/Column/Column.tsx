@@ -1,12 +1,12 @@
 import Icons from "../UI/Icons";
 import { IColumnProps } from "./Column.props";
 import styles from './Column.module.css'
-import { useSortable } from "@dnd-kit/sortable";
+import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
 import Task from "../Task/Task";
 
-const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTask }: IColumnProps) => {
+const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTask, changeTask }: IColumnProps) => {
 
     //Состояние для возможности отредактировать заголовок доски
     const [editMode, setEditMode] = useState(false)
@@ -35,6 +35,7 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
         transform: CSS.Transform.toString(transform)
     }
 
+    //Возвращает оверлей без контента!!! Который на заднем фоне!!!
     if (isDragging) {
         return (
             <div
@@ -60,6 +61,7 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
             style={style}
             {...listeners}
             {...attributes}
+
             className="
         w-[350px]
         h-[500px]
@@ -95,7 +97,7 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
                             className="bg-board-bg-color focus: outline-rose-500 rounded-md outline-none font-normal px-2"
                             autoFocus
                             onChange={(event) => changeTitle!(event.target.value, column.id)}
-                            defaultValue={column.title}
+                            value={column.title}
                             onBlur={() => setEditMode(false)}
                             onKeyDown={(event) => {
                                 if (event.code !== 'Enter') return;
@@ -110,18 +112,22 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
                     size-7 
                     rounded-md
                     flex justify-center items-center
-                    
-                "><Icons iconName="trash" styles={`${styles['icon']}`} /></button>
+                    ">
+                    <Icons iconName="trash" styles={`${styles['icon']}`} />
+                </button>
             </div>
 
             <div className="flex flex-grow flex-col gap-5 overflow-x-hidden overflow-y-auto p-2 w-full">
+                {/* <SortableContext items={tasks}> */}
                 {Boolean(tasks.length) && tasks.map((task) => (
                     <Task
                         key={task.id}
                         task={task}
                         deleteTask={deleteTask}
+                        changeTask={changeTask}
                     />
                 ))}
+                {/* </SortableContext> */}
             </div>
 
             <div

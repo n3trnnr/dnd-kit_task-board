@@ -105,6 +105,17 @@ const KanbanBoard = () => {
         })
     }
 
+    const handleChangeTask = (content: string, id: TId) => {
+        const editedTask = tasks.map((task) => {
+            if (task.id !== id) {
+                return task
+            }
+            return { ...task, content: content }
+        })
+
+        setTasks(editedTask)
+    }
+
     return (
         <div className="
             w-full min-h-screen
@@ -132,13 +143,14 @@ const KanbanBoard = () => {
                                 createTask={handleCreateTask}
                                 tasks={tasks.filter((task) => { return task.columnId === column.id })}
                                 deleteTask={handleDeleteTask}
+                                changeTask={handleChangeTask}
                             />
                         ))}
                     </SortableContext>
 
                     {//createPortal - функция создает внепоточный реакт элемент встраиваемый в document.body
                         createPortal(<DragOverlay>
-                            {/*Создани оверлея активной доки*/}
+                            {/*Создани оверлея активной доки - доска с контентом а не задник!!!*/}
                             {activeColumn && <Column
                                 key={activeColumn.id}
                                 column={activeColumn}
@@ -147,6 +159,7 @@ const KanbanBoard = () => {
                                 createTask={handleCreateTask}
                                 tasks={tasks.filter((task) => { return task.columnId === activeColumn.id })}
                                 deleteTask={handleDeleteTask}
+                                changeTask={handleChangeTask}
                             />}
                         </DragOverlay>,
                             document.body
@@ -167,8 +180,7 @@ const KanbanBoard = () => {
                     border-2 border-board-bg-color ring-rose-500
                     hover:ring-2
                     cursor-pointer
-                    "
-                >
+                    ">
                     <Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить доску
                 </button>
             </div>
