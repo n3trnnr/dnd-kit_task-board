@@ -17,6 +17,10 @@ body,
   height: 8px;
 }
 
+::-webkit-scrollbar:vertical {
+  width: 4px;
+}
+
 /*индикатор прокрутки, перетаскиваемый элемент*/
 ::-webkit-scrollbar-thumb {
   @apply bg-rose-900 rounded-xl
