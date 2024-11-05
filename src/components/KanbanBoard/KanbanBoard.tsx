@@ -4,7 +4,7 @@ import Column from "../Column/Column";
 import Icons from "../UI/Icons";
 import styles from './KanbanBoard.module.css'
 
-import { closestCorners, DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
 import Task from "../Task/Task";
@@ -17,6 +17,12 @@ const KanbanBoard = () => {
     const [tasks, setTasks] = useState<ITask[]>([])
     const [activeTask, setActiveTask] = useState<ITask | null>(null)
 
+    const columnsId = useMemo(() => {
+        return columns.map((column) => {
+            return column.id
+        })
+    }, [columns])
+
     const sensors = useSensors(
         useSensor(PointerSensor, {//Решение проблемы с удалением доски
             activationConstraint: {
@@ -24,38 +30,6 @@ const KanbanBoard = () => {
             }
         })
     )
-
-    // useEffect(() => {
-    //     const getStorage = localStorage.getItem('columns')
-    //     if (getStorage) {
-    //         const data = JSON.parse(getStorage) as IColumn[]
-    //         setColumns([...data])
-    //     }
-    // }, [])
-
-    const columnsId = useMemo(() => {
-        return columns.map((column) => {
-            return column.id
-        })
-    }, [columns])
-
-    //Создание доски
-    const handleCreateColumn = () => {
-        const newColumn: IColumn = {
-            id: idGenerator(),
-            title: `Доска ${columns.length + 1}`
-        }
-        setColumns([...columns, newColumn])
-    }
-
-    //Удаление доски
-    const handleDeleteColumn = (id: TId) => {
-        setColumns((columns) => {
-            return columns.filter((column) => {
-                return column.id !== id
-            })
-        })
-    }
 
     //Получение и установка текушей доски и задачи для создания оверлея
     const onDragStart = (event: DragStartEvent) => {
@@ -72,8 +46,7 @@ const KanbanBoard = () => {
 
     //Получение текущей доски и конечной доски, фильтрация массива с досками
     const onDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event
-        console.log(event);
+        const { active, over } = event;
 
         if (!over) {
             return;
@@ -91,6 +64,75 @@ const KanbanBoard = () => {
             const overIndex = columns.findIndex((column) => { return column.id === overId })
             return arrayMove(columns, activeIndex, overIndex)
         })
+    }
+
+    //Реализация перемещения задач из одной доски в другую и в рамках одной доски
+    const onDragOver = (event: DragOverEvent) => {
+        const { active, over } = event;
+
+        if (!over) {
+            return;
+        };
+
+        const activeId = active.id
+        const overId = over.id
+
+        const isActiveTask = active.data.current?.type === 'Task'
+        const isOverTask = over.data.current?.type === 'Task'
+
+        if (active.id === over.id) {
+            return;
+        };
+
+        if (!isActiveTask) {
+            return;
+        }
+
+        //Перенос задач в НЕ ПУСТУЮ доску
+        if (isActiveTask === isOverTask) {
+            setTasks((tasks) => {
+                const activeIndex = tasks.findIndex((tasks) => { return tasks.id === activeId })
+                const overIndex = tasks.findIndex((tasks) => { return tasks.id === overId })
+
+                tasks[activeIndex].columnId = tasks[overIndex].columnId
+
+                return arrayMove(tasks, activeIndex, overIndex)
+            })
+        }
+
+        //Перенос задачи в ПУСТУЮ доску
+        const isOverColumn = over.data.current?.type === 'Column'
+
+        if (isActiveTask && isOverColumn) {
+            setTasks((tasks) => {
+                const activeIndex = tasks.findIndex((tasks) => { return tasks.id === activeId })
+
+                tasks[activeIndex].columnId = overId
+
+                return arrayMove(tasks, activeIndex, activeIndex)
+            })
+        }
+    }
+
+    //Создание доски
+    const handleCreateColumn = () => {
+        const newColumn: IColumn = {
+            id: idGenerator(),
+            title: `Доска ${columns.length + 1}`
+        }
+        setColumns([...columns, newColumn])
+    }
+
+    //Удаление доски
+    const handleDeleteColumn = (id: TId) => {
+        setColumns((columns) => {
+            return columns.filter((column) => {
+                return column.id !== id
+            })
+        })
+
+        const newTask = tasks.filter((task) => task.columnId !== id)
+        setTasks(newTask)
     }
 
     //Редактирование заголовка доски
@@ -146,9 +188,9 @@ const KanbanBoard = () => {
                 {/*Контекст для работы dnd-kit*/}
                 <DndContext
                     sensors={sensors}
-                    collisionDetection={closestCorners}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
+                    onDragOver={onDragOver}
                 >
                     {/*Контекст который предоставляет данные для useSortable*/}
                     <SortableContext items={columnsId}>

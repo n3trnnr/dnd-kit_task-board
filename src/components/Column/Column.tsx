@@ -1,11 +1,10 @@
 import Icons from "../UI/Icons";
 import { IColumnProps } from "./Column.props";
 import styles from './Column.module.css'
-import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import Task from "../Task/Task";
-import { DndContext } from "@dnd-kit/core";
 
 const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTask, changeTask }: IColumnProps) => {
 
@@ -126,7 +125,6 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
                 </button>
             </div>
 
-            {/* <DndContext> */}
             <div className="flex flex-grow flex-col gap-5 overflow-x-hidden overflow-y-auto p-2 w-full">
                 <SortableContext items={tasksId} >
                     {Boolean(tasks.length) && tasks.map((task) => (
@@ -139,7 +137,6 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
                     ))}
                 </SortableContext>
             </div>
-            {/* </DndContext> */}
 
             <div
                 onClick={() => createTask!(column.id)}
