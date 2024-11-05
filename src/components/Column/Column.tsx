@@ -1,31 +1,36 @@
 import Icons from "../UI/Icons";
 import { IColumnProps } from "./Column.props";
 import styles from './Column.module.css'
-import { SortableContext, useSortable } from "@dnd-kit/sortable";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Task from "../Task/Task";
+import { DndContext } from "@dnd-kit/core";
 
 const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTask, changeTask }: IColumnProps) => {
 
     //Состояние для возможности отредактировать заголовок доски
     const [editMode, setEditMode] = useState(false)
 
+    const tasksId = useMemo(() => {
+        return tasks.map((task) => {
+            return task.id
+        })
+    }, [tasks])
+
+
     const {
+        setNodeRef,
         attributes,
         listeners,
-        setNodeRef,
         transform,
         transition,
         isDragging //Если доска активная то возвращает true
     } = useSortable({
         id: column.id,
         data: {
-            column: {
-                id: column.id,
-                title: column.title
-            },
-            type: 'Column'
+            type: 'Column',
+            column
         },
         disabled: editMode//При редактировании заголовка доски, перетаскиевание становится не активным
     })
@@ -41,17 +46,19 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
             <div
                 ref={setNodeRef}
                 style={style}
+                {...attributes}
+                {...listeners}
                 className="
-        w-[350px]
-        h-[500px]
-        opacity-40
-        max-h-[500px]
-        flex justify-start items-center flex-col
-        rounded-lg
-        border-2
-        border-rose-500
-        bg-board-bg-color
-        "/>
+                w-[350px]
+                h-[500px]
+                opacity-40
+                max-h-[500px]
+                flex justify-start items-center flex-col
+                rounded-lg
+                border-2
+                border-rose-500
+                bg-board-bg-color
+            "/>
         )
     }
 
@@ -59,38 +66,39 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
         <div
             ref={setNodeRef}
             style={style}
-            {...listeners}
-            {...attributes}
 
             className="
-        w-[350px]
-        h-[500px]
-        max-h-[500px]
-        flex justify-start items-center flex-col
-        rounded-lg
-        border-2
-        border-board-bg-color
-        bg-board-bg-color
-        ">
+            w-[350px]
+            h-[500px]
+            max-h-[500px]
+            flex justify-start items-center flex-col
+            rounded-lg
+            border-2
+            border-board-bg-color
+            bg-board-bg-color
+            ">
             <div
                 //Двойной клик для возможности отредактировать заголовок доски
                 onDoubleClick={() => setEditMode(true)}
-                // {...listeners}
-                // {...attributes}
+
+                {...attributes}
+                {...listeners}
+
                 className="
-            flex justify-between items-center
-            h-[60px] w-full
-            p-3
-            border-4 border-board-bg-color 
-            rounded-t-lg rounded-b-none
-            bg-main-bg-color
-            cursor-grab
-            ">
+                flex justify-between items-center
+                h-[60px] w-full
+                p-3
+                border-4 border-board-bg-color 
+                rounded-t-lg rounded-b-none
+                bg-main-bg-color
+                cursor-grab
+                ">
                 <h3 className="
-            text-md font-bold
-            flex justify-center items-center gap-x-3
-            ">
+                text-md font-bold
+                flex justify-center items-center gap-x-3
+                ">
                     <div className="flex justify-center items-center">{tasks.length}</div>
+
                     {/*Условие для редактирование заголовка и отображение заголовка*/}
                     {!editMode ? column.title :
                         <input
@@ -106,6 +114,7 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
                         />
                     }
                 </h3>
+
                 <button
                     onClick={() => deleteColumn(column.id)}
                     className="
@@ -117,32 +126,34 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
                 </button>
             </div>
 
+            {/* <DndContext> */}
             <div className="flex flex-grow flex-col gap-5 overflow-x-hidden overflow-y-auto p-2 w-full">
-                {/* <SortableContext items={tasks}> */}
-                {Boolean(tasks.length) && tasks.map((task) => (
-                    <Task
-                        key={task.id}
-                        task={task}
-                        deleteTask={deleteTask}
-                        changeTask={changeTask}
-                    />
-                ))}
-                {/* </SortableContext> */}
+                <SortableContext items={tasksId} >
+                    {Boolean(tasks.length) && tasks.map((task) => (
+                        <Task
+                            key={task.id}
+                            task={task}
+                            deleteTask={deleteTask}
+                            changeTask={changeTask}
+                        />
+                    ))}
+                </SortableContext>
             </div>
+            {/* </DndContext> */}
 
             <div
                 onClick={() => createTask!(column.id)}
                 className="
                 flex justify-center            
-            w-full 
-            p-3
-            border-4 
-            text-rose-500
-            border-board-bg-color 
-            rounded-b-lg rounded-t-none
-            hover:bg-main-bg-color hover:text-white
-            cursor-pointer
-            ">
+                w-full 
+                p-3
+                border-4 
+                text-rose-500
+                border-board-bg-color 
+                rounded-b-lg rounded-t-none
+                hover:bg-main-bg-color hover:text-white
+                cursor-pointer
+                ">
                 <button className="flex justify-between items-center gap-x-2">
                     <Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить задачу
                 </button>

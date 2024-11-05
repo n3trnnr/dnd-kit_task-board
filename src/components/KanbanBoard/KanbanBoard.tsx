@@ -7,37 +7,42 @@ import styles from './KanbanBoard.module.css'
 import { closestCorners, DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
+import Task from "../Task/Task";
+import { idGenerator } from "../../helpers/idGenerator";
 
 const KanbanBoard = () => {
     const [columns, setColumns] = useState<IColumn[]>([])
     const [activeColumn, setActiveColumn] = useState<IColumn | null>(null)
+
     const [tasks, setTasks] = useState<ITask[]>([])
+    const [activeTask, setActiveTask] = useState<ITask | null>(null)
 
     const sensors = useSensors(
         useSensor(PointerSensor, {//Решение проблемы с удалением доски
             activationConstraint: {
-                distance: 3 // Расстояние на которое должна переместиться доска чтобы активироваться
+                distance: 3, // Расстояние на которое должна переместиться доска чтобы активироваться,
             }
         })
     )
 
-    useEffect(() => {
-        const getStorage = localStorage.getItem('columns')
-        if (getStorage) {
-            const data = JSON.parse(getStorage) as IColumn[]
-            setColumns([...data])
-        }
-    }, [])
+    // useEffect(() => {
+    //     const getStorage = localStorage.getItem('columns')
+    //     if (getStorage) {
+    //         const data = JSON.parse(getStorage) as IColumn[]
+    //         setColumns([...data])
+    //     }
+    // }, [])
 
     const columnsId = useMemo(() => {
-        return columns.map((column) => column.id)
+        return columns.map((column) => {
+            return column.id
+        })
     }, [columns])
-    // console.log('columnsId', columnsId);
 
     //Создание доски
     const handleCreateColumn = () => {
         const newColumn: IColumn = {
-            id: columns.length + 1,
+            id: idGenerator(),
             title: `Доска ${columns.length + 1}`
         }
         setColumns([...columns, newColumn])
@@ -52,28 +57,40 @@ const KanbanBoard = () => {
         })
     }
 
-    //Получение и установка текушей доски для создания оверлея
+    //Получение и установка текушей доски и задачи для создания оверлея
     const onDragStart = (event: DragStartEvent) => {
-        console.log('onDragStart', event);
         if (event.active.data.current?.type === 'Column') {
+            setActiveTask(null)
             setActiveColumn(event.active.data.current.column)
+        }
+
+        if (event.active.data.current?.type === 'Task') {
+            setActiveColumn(null)
+            setActiveTask(event.active.data.current.task)
         }
     }
 
-    //Получение текущей доски и конечной доски
+    //Получение текущей доски и конечной доски, фильтрация массива с досками
     const onDragEnd = (event: DragEndEvent) => {
         const { active, over } = event
+        console.log(event);
 
-        const activeIndex = columns.findIndex((column) => { return column.id === event.active.id })
-        const overIndex = columns.findIndex((column) => { return column.id === event.over?.id })
-
-        if (active.id === over?.id) {
+        if (!over) {
             return;
         }
 
-        setColumns(
-            arrayMove(columns, activeIndex, overIndex)
-        )
+        const activeId = active.id
+        const overId = over.id
+
+        if (active.id === over.id) {
+            return;
+        }
+
+        setColumns((columns) => {
+            const activeIndex = columns.findIndex((column) => { return column.id === activeId })
+            const overIndex = columns.findIndex((column) => { return column.id === overId })
+            return arrayMove(columns, activeIndex, overIndex)
+        })
     }
 
     //Редактирование заголовка доски
@@ -90,21 +107,23 @@ const KanbanBoard = () => {
     //Создание новой задачи
     const handleCreateTask = (columnId: TId) => {
         const newTask: ITask = {
-            id: tasks.length + 1,
+            id: idGenerator(),
             columnId: columnId,
             content: `Задача ${tasks.length + 1}`
         }
-
         setTasks([...tasks, newTask])
     }
 
     //Удаление задачи
     const handleDeleteTask = (id: TId) => {
+        console.log(id);
+
         setTasks((tasks) => {
             return tasks.filter((task) => task.id !== id)
         })
     }
 
+    //Редактирование описания задачи
     const handleChangeTask = (content: string, id: TId) => {
         const editedTask = tasks.map((task) => {
             if (task.id !== id) {
@@ -112,7 +131,6 @@ const KanbanBoard = () => {
             }
             return { ...task, content: content }
         })
-
         setTasks(editedTask)
     }
 
@@ -127,13 +145,13 @@ const KanbanBoard = () => {
             <div className="flex gap-x-5">
                 {/*Контекст для работы dnd-kit*/}
                 <DndContext
+                    sensors={sensors}
                     collisionDetection={closestCorners}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
-                    sensors={sensors}
                 >
                     {/*Контекст который предоставляет данные для useSortable*/}
-                    <SortableContext items={columns}>
+                    <SortableContext items={columnsId}>
                         {Boolean(columns.length) && columns.map(column => (
                             <Column
                                 key={column.id}
@@ -149,19 +167,28 @@ const KanbanBoard = () => {
                     </SortableContext>
 
                     {//createPortal - функция создает внепоточный реакт элемент встраиваемый в document.body
-                        createPortal(<DragOverlay>
-                            {/*Создани оверлея активной доки - доска с контентом а не задник!!!*/}
-                            {activeColumn && <Column
-                                key={activeColumn.id}
-                                column={activeColumn}
-                                deleteColumn={handleDeleteColumn}
-                                changeTitle={handleChangeTitle}
-                                createTask={handleCreateTask}
-                                tasks={tasks.filter((task) => { return task.columnId === activeColumn.id })}
-                                deleteTask={handleDeleteTask}
-                                changeTask={handleChangeTask}
-                            />}
-                        </DragOverlay>,
+                        createPortal(
+                            <DragOverlay>
+                                {/*Создани оверлея активной доски - доска с контентом а не заглушка!!!*/}
+                                {activeColumn && <Column
+                                    key={activeColumn.id}
+                                    column={activeColumn}
+                                    deleteColumn={handleDeleteColumn}
+                                    changeTitle={handleChangeTitle}
+                                    createTask={handleCreateTask}
+                                    tasks={tasks.filter((task) => { return task.columnId === activeColumn.id })}
+                                    deleteTask={handleDeleteTask}
+                                    changeTask={handleChangeTask}
+                                />}
+
+                                {/*Создани оверлея активной задачи - задача с контентом а не заглушка!!!*/}
+                                {activeTask && <Task
+                                    key={activeTask.id}
+                                    task={activeTask}
+                                    deleteTask={handleDeleteTask}
+                                    changeTask={handleChangeTask}
+                                />}
+                            </DragOverlay>,
                             document.body
                         )}
 

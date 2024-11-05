@@ -16,34 +16,36 @@ const Task = ({ task, deleteTask, changeTask }: ITaskProps) => {
         setMouseIsOver((prevState) => !prevState)
     }
 
-    // const {
-    //     attributes,
-    //     listeners,
-    //     setNodeRef,
-    //     transform,
-    //     transition
-    // } = useSortable({
-    //     id: task.id,
-    //     data: {
-    //         task: {
-    //             id: task.id,
-    //             content: task.content,
-    //             columnId: task.columnId
-    //         },
-    //         type: 'Task'
-    //     },
-    //     disabled: editMode//При редактировании заголовка доски, перетаскиевание становится не активным
-    // })
+    const {
+        setNodeRef,
+        attributes,
+        listeners,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({
+        id: task.id,
+        data: {
+            type: 'Task',
+            task
+        },
+        disabled: editMode//При редактировании заголовка доски, перетаскиевание становится не активным
+    })
 
-    // const style = {
-    //     transition,
-    //     transform: CSS.Transform.toString(transform)
-    // }
+    const style = {
+        transition,
+        transform: CSS.Transform.toString(transform)
+    }
 
     //Редактирование карточки с задачей
     if (editMode) {
         return (
             <div
+                ref={setNodeRef}
+                // style={style}
+                // {...attributes}
+                // {...listeners}
+
                 className="
             relative 
             min-h-[150px] 
@@ -69,12 +71,29 @@ const Task = ({ task, deleteTask, changeTask }: ITaskProps) => {
         )
     }
 
+    if (isDragging) {
+        return (
+            <div
+                ref={setNodeRef}
+                style={style}
+
+                className="
+                min-h-[150px]
+                max-h-[150px] 
+                rounded-lg 
+                bg-main-bg-color
+                opacity-40
+                ring-2 ring-inset ring-rose-500
+            "/>
+        )
+    }
+
     return (
         <div
-            // ref={setNodeRef}
-            // style={style}
-            // {...attributes}
-            // {...listeners}
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
 
             onMouseEnter={() => setMouseIsOver(true)}
             onMouseLeave={() => setMouseIsOver(false)}
