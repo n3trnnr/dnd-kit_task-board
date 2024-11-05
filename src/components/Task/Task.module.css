@@ -1,7 +1,6 @@
 .icon {
     width: 20px;
     height: auto;
-    opacity: 0;
 }
 
 .icon path {
@@ -15,10 +14,4 @@ button:hover .icon path {
 
 button:focus .icon path {
     stroke: rgb(244 63 94);
-}
-
-div:hover>button .icon,
-div:focus>button .icon,
-button:focus .icon {
-    opacity: 100;
 }

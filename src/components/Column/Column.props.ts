@@ -6,5 +6,6 @@ export interface IColumnProps {
     changeTitle: (title: string, id: TId) => void,
     createTask: (columnId: TId) => void
     tasks: ITask[],
-    deleteTask: (id: TId) => void
+    deleteTask: (id: TId) => void,
+    changeTask: (content: string, id: TId) => void
 }
