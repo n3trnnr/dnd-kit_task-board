@@ -1,7 +1,7 @@
-import { ITask, TId } from "../KanbanBoard/types";
+import { ITask, TId } from "../../types/types";
 
 export interface ITaskProps {
     task: ITask,
-    deleteTask: (id: TId) => void,
-    changeTask: (content: string, id: TId) => void
+    deleteTask: (columnId: TId, taskId: TId) => void,
+    changeTask: (columnId: TId, content: string, id: TId) => void
 }

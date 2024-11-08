@@ -1,0 +1,26 @@
+.icon,
+.icon-plus {
+    width: 20px;
+    height: auto;
+}
+
+.icon path {
+    stroke: white;
+    stroke-width: 1;
+}
+
+button:hover .icon path {
+    stroke: rgb(244 63 94);
+}
+
+button:focus .icon path {
+    stroke: rgb(244 63 94);
+}
+
+.icon-plus path {
+    fill: #f43f5e;
+}
+
+div:hover>button .icon-plus path {
+    fill: white;
+}
