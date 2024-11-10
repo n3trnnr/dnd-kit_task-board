@@ -31,7 +31,7 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, deleteTask, cha
             type: 'Column',
             column
         },
-        disabled: editMode//При редактировании заголовка доски, перетаскиевание становится не активным
+        disabled: editMode,//При редактировании заголовка доски, перетаскиевание становится не активным,
     })
 
     const style = {

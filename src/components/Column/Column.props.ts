@@ -1,4 +1,4 @@
-import { IColumn, ITask, TId } from '../../types/types';
+import { IColumn, TId } from '../../types/types';
 
 export interface IColumnProps {
     column: IColumn
