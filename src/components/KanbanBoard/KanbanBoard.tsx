@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { IColumn, ITask, TId } from "../../types/types";
+import { IColumn, IFormData, ITask, TId } from "../../types/types";
 import Column from "../Column/Column";
 import Icons from "../UI/Icons";
 import styles from './KanbanBoard.module.css'
@@ -11,12 +11,16 @@ import { idGenerator } from "../../helpers/idGenerator";
 import ColumnOverlay from "../ColumnOverlay/ColumnOverlay";
 import TaskOverlay from "../TaskOverlay/TaskOverlay";
 import { getStorage, setStorage } from "../../localStorage/localStorage";
+import Dashboard from "../Dashboard/Dashboard";
+import ModalWindow from "../ModalWindow/ModalWindow";
 
 const KanbanBoard = () => {
     const [columns, setColumns] = useState<IColumn[]>([])
 
     const [activeColumn, setActiveColumn] = useState<IColumn | null>(null)
     const [activeTask, setActiveTask] = useState<ITask | null>(null)
+
+    const [isModal, setIsModal] = useState(false)
 
     const columnsId = useMemo(() => {
         return columns.map((column) => {
@@ -188,13 +192,21 @@ const KanbanBoard = () => {
     }
 
     //Создание доски
-    const handleCreateColumn = () => {
+    const handleCreateColumn = (formData: IFormData) => {
+
         const newColumn: IColumn = {
             id: idGenerator(),
-            title: `Доска ${columns.length + 1}`,
-            tasks: []
+            title: formData.description,
+            tasks: [],
         }
-        setColumns([...columns, newColumn])
+
+        if (formData.isCompleted && typeof formData.isCompleted === 'boolean') {
+            newColumn.isCompleted = formData.isCompleted
+        }
+
+        if (columns.length < 10) {
+            setColumns([...columns, newColumn])
+        }
     }
 
     //Удаление доски
@@ -274,76 +286,72 @@ const KanbanBoard = () => {
         })
     }
 
+
+
     return (
-        <div className="
-            w-full min-h-screen
-            m-auto
-            px-[40px]
-            flex items-center gap-5
-            overflow-x-auto overflow-y-hidden
-            ">
-            {/*Контекст для работы dnd-kit*/}
-            <DndContext
-                sensors={sensors}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                onDragOver={onDragOver}
-                collisionDetection={closestCorners}
-            >
-                <div className="flex gap-x-5">
-                    {/*Контекст который предоставляет данные для useSortable*/}
-                    <SortableContext items={columnsId}>
-                        {Boolean(columns.length) && columns.map(column => (
-                            <Column
-                                key={column.id}
-                                column={column}
-                                deleteColumn={handleDeleteColumn}
-                                changeTitle={handleChangeTitle}
-                                createTask={handleCreateTask}
-                                deleteTask={handleDeleteTask}
-                                changeTask={handleChangeTask}
-                            />
-                        ))}
-                    </SortableContext>
+        <>
+            {isModal && <ModalWindow type="column" createColumn={handleCreateColumn} showModal={setIsModal} />}
+            <div className={isModal ? `${styles['main-container__blur']}` : `${styles['main-container']}`}>
 
-                    {//createPortal - функция создает внепоточный реакт элемент встраиваемый в document.body
-                        createPortal(
-                            <DragOverlay>
-                                {/*Создани оверлея активной доски - доска с контентом а не заглушка!!!*/}
-                                {activeColumn &&
-                                    <ColumnOverlay
-                                        key={activeColumn.id}
-                                        column={activeColumn}
-                                        tasks={activeColumn.tasks.filter((task) => { return task.columnId === activeColumn.id })}
-                                    />
-                                }
+                <div className={`${columns.length > 0 ? 'flex justify-between items-center my-auto h-[60px]' : 'flex flex-col m-auto gap-10'}`}>
+                    {Boolean(columns.length) && <Dashboard columns={columns} />}
 
-                                {/*Создани оверлея активной задачи - задача с контентом а не заглушка!!!*/}
-                                {activeTask && <TaskOverlay key={activeTask.id} task={activeTask} />}
-                            </DragOverlay>,
-                            document.body
-                        )}
+                    <button
+                        onClick={() => setIsModal(true)}
+                        className={`${columns.length > 0 ? styles['button'] : styles['button-animation']}`}>
+                        <Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить колонку
+                    </button>
                 </div>
-            </DndContext>
 
-            <div className="m-auto">
-                <button
-                    onClick={handleCreateColumn}
-                    className="
-                    h-[60px] w-[350px] min-w-[350px]
-                    flex items-center justify-center gap-5
-                    p-4
-                    rounded-lg 
-                    bg-main-bg-color
-                    border-2 border-board-bg-color ring-rose-500
-                    hover:ring-2
-                    cursor-pointer
-                    ">
-                    <Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить доску
-                </button>
+                {Boolean(columns.length) && <div className="flex my-auto overflow-y-auto">
+                    {/*Контекст для работы dnd-kit*/}
+                    <DndContext
+                        sensors={sensors}
+                        onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
+                        onDragOver={onDragOver}
+                        collisionDetection={closestCorners}
+                    >
+                        <div className="flex gap-x-5 mb-5">
+                            {/*Контекст который предоставляет данные для useSortable*/}
+                            <SortableContext items={columnsId}>
+                                {Boolean(columns.length) && columns.map(column => (
+                                    <Column
+                                        key={column.id}
+                                        column={column}
+                                        deleteColumn={handleDeleteColumn}
+                                        changeTitle={handleChangeTitle}
+                                        createTask={handleCreateTask}
+                                        deleteTask={handleDeleteTask}
+                                        changeTask={handleChangeTask}
+                                        showModal={setIsModal}
+                                    />
+                                ))}
+                            </SortableContext>
+
+                            {//createPortal - функция создает внепоточный реакт элемент встраиваемый в document.body
+                                createPortal(
+                                    <DragOverlay>
+                                        {/*Создани оверлея активной доски - доска с контентом а не заглушка!!!*/}
+                                        {activeColumn &&
+                                            <ColumnOverlay
+                                                key={activeColumn.id}
+                                                column={activeColumn}
+                                                tasks={activeColumn.tasks.filter((task) => { return task.columnId === activeColumn.id })}
+                                            />
+                                        }
+
+                                        {/*Создани оверлея активной задачи - задача с контентом а не заглушка!!!*/}
+                                        {activeTask && <TaskOverlay key={activeTask.id} task={activeTask} />}
+                                    </DragOverlay>,
+                                    document.body
+                                )}
+                        </div>
+                    </DndContext>
+                </div>}
+
             </div>
-
-        </div>
+        </>
     );
 }
 
