@@ -3,7 +3,7 @@ import { ITaskProps } from "./Task.props";
 import styles from './Task.module.css'
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 
 const Task = ({ task, deleteTask, changeTask }: ITaskProps) => {
@@ -29,7 +29,7 @@ const Task = ({ task, deleteTask, changeTask }: ITaskProps) => {
             type: 'Task',
             task
         },
-        disabled: editMode//При редактировании заголовка доски, перетаскиевание становится не активным
+        disabled: editMode,//При редактировании заголовка доски, перетаскиевание становится не активным
     })
 
     const style = {
@@ -37,14 +37,17 @@ const Task = ({ task, deleteTask, changeTask }: ITaskProps) => {
         transform: CSS.Transform.toString(transform)
     }
 
+    useEffect(() => {
+        if (isDragging) {
+            setMouseIsOver(false)
+        }
+    }, [isDragging])
+
     //Редактирование карточки с задачей
     if (editMode) {
         return (
             <div
                 ref={setNodeRef}
-                // style={style}
-                // {...attributes}
-                // {...listeners}
 
                 className="
             relative 
@@ -60,7 +63,7 @@ const Task = ({ task, deleteTask, changeTask }: ITaskProps) => {
                     value={task.content}
                     autoFocus
                     placeholder="Опишите задачу"
-                    onChange={(event) => changeTask(event.target.value, task.id)}
+                    onChange={(event) => changeTask(task.columnId, event.target.value, task.id)}
                     onBlur={toogleEditMode}
                     onKeyDown={(event) => {
                         if (event.code === 'Enter' && event.shiftKey) return;
@@ -98,7 +101,10 @@ const Task = ({ task, deleteTask, changeTask }: ITaskProps) => {
 
             onMouseEnter={() => setMouseIsOver(true)}
             onMouseLeave={() => setMouseIsOver(false)}
-            onDoubleClick={toogleEditMode}
+            onDoubleClick={() => {
+                setMouseIsOver(false)
+                toogleEditMode()
+            }}
 
             className="
             relative 
@@ -111,10 +117,12 @@ const Task = ({ task, deleteTask, changeTask }: ITaskProps) => {
             cursor-grab
             break-words
             ">
-            <p className="my-auto h-full w-[90%] overflow-x-hidden overflow-y-auto whitespace-pre-wrap">{Boolean(task.content.trim().length) ? task.content : <span className="text-gray-500">Опишите задачу</span>}</p>
+            <p className="my-auto h-full w-[90%] overflow-x-hidden overflow-y-auto whitespace-pre-wrap">
+                {Boolean(task.content.trim().length) ? task.content : <span className="text-gray-500">Опишите задачу</span>}
+            </p>
 
             {mouseIsOver && <button
-                onClick={() => deleteTask(task.id)}
+                onClick={() => deleteTask(task.columnId, task.id)}
                 className="absolute top-3 right-3 size-7 flex justify-center items-center
             ">
                 <Icons iconName="trash" styles={styles['icon']} />

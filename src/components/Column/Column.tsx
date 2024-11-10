@@ -6,16 +6,16 @@ import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import Task from "../Task/Task";
 
-const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTask, changeTask }: IColumnProps) => {
+const Column = ({ column, deleteColumn, changeTitle, createTask, deleteTask, changeTask }: IColumnProps) => {
 
     //Состояние для возможности отредактировать заголовок доски
     const [editMode, setEditMode] = useState(false)
 
     const tasksId = useMemo(() => {
-        return tasks.map((task) => {
+        return column.tasks.map((task) => {
             return task.id
         })
-    }, [tasks])
+    }, [column.tasks])
 
 
     const {
@@ -31,7 +31,7 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
             type: 'Column',
             column
         },
-        disabled: editMode//При редактировании заголовка доски, перетаскиевание становится не активным
+        disabled: editMode,//При редактировании заголовка доски, перетаскиевание становится не активным,
     })
 
     const style = {
@@ -96,7 +96,7 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
                 text-md font-bold
                 flex justify-center items-center gap-x-3
                 ">
-                    <div className="flex justify-center items-center">{tasks.length}</div>
+                    <div className="flex justify-center items-center">{column.tasks.length}</div>
 
                     {/*Условие для редактирование заголовка и отображение заголовка*/}
                     {!editMode ? column.title :
@@ -126,8 +126,8 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
             </div>
 
             <div className="flex flex-grow flex-col gap-5 overflow-x-hidden overflow-y-auto p-2 w-full">
-                <SortableContext items={tasksId} >
-                    {Boolean(tasks.length) && tasks.map((task) => (
+                <SortableContext items={tasksId}>
+                    {Boolean(column.tasks.length) && column.tasks.map((task) => (
                         <Task
                             key={task.id}
                             task={task}
@@ -139,7 +139,7 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, tasks, deleteTa
             </div>
 
             <div
-                onClick={() => createTask!(column.id)}
+                onClick={() => createTask(column.id)}
                 className="
                 flex justify-center            
                 w-full 

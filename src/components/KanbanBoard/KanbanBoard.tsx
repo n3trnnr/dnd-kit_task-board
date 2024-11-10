@@ -1,26 +1,38 @@
 import { useEffect, useMemo, useState } from "react";
-import { IColumn, ITask, TId } from "./types";
+import { IColumn, ITask, TId } from "../../types/types";
 import Column from "../Column/Column";
 import Icons from "../UI/Icons";
 import styles from './KanbanBoard.module.css'
 
-import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { closestCorners, DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
-import Task from "../Task/Task";
 import { idGenerator } from "../../helpers/idGenerator";
+import ColumnOverlay from "../ColumnOverlay/ColumnOverlay";
+import TaskOverlay from "../TaskOverlay/TaskOverlay";
+import { getStorage, setStorage } from "../../localStorage/localStorage";
 
 const KanbanBoard = () => {
     const [columns, setColumns] = useState<IColumn[]>([])
-    const [activeColumn, setActiveColumn] = useState<IColumn | null>(null)
 
-    const [tasks, setTasks] = useState<ITask[]>([])
+    const [activeColumn, setActiveColumn] = useState<IColumn | null>(null)
     const [activeTask, setActiveTask] = useState<ITask | null>(null)
 
     const columnsId = useMemo(() => {
         return columns.map((column) => {
             return column.id
         })
+    }, [columns])
+
+    useEffect(() => {
+        const data = getStorage('columns')
+        if (data) {
+            setColumns(data)
+        }
+    }, [])
+
+    useEffect(() => {
+        setStorage('columns', columns)
     }, [columns])
 
     const sensors = useSensors(
@@ -31,15 +43,35 @@ const KanbanBoard = () => {
         })
     )
 
-    //Получение и установка текушей доски и задачи для создания оверлея
+    //Поиск конкретной колонки или задачи
+    const findItem = (id: TId, type: 'Column' | 'Task') => {
+        if (type = 'Column') {
+            return columns.find((column) => { return column.id === id })
+        }
+
+        if (type === 'Task') {
+            return columns.find((column) => {
+                return column.tasks.find((task) => { return task.id === id })
+            })
+        }
+    }
+
+    //Поиск конкретного индекса колонки или задачи
+    const findIndex = (arr: IColumn[] | ITask[], id: TId) => {
+        return arr.findIndex((item) => {
+            return item.id === id
+        })
+    }
+
+    //Получение и установка текушей доски или задачи для создания оверлея
     const onDragStart = (event: DragStartEvent) => {
+        setActiveColumn(null)
+        setActiveTask(null)
         if (event.active.data.current?.type === 'Column') {
-            setActiveTask(null)
             setActiveColumn(event.active.data.current.column)
         }
 
         if (event.active.data.current?.type === 'Task') {
-            setActiveColumn(null)
             setActiveTask(event.active.data.current.task)
         }
     }
@@ -52,6 +84,10 @@ const KanbanBoard = () => {
             return;
         }
 
+        if (active.data.current?.type === 'Task') {
+            return;
+        }
+
         const activeId = active.id
         const overId = over.id
 
@@ -59,9 +95,10 @@ const KanbanBoard = () => {
             return;
         }
 
+
         setColumns((columns) => {
-            const activeIndex = columns.findIndex((column) => { return column.id === activeId })
-            const overIndex = columns.findIndex((column) => { return column.id === overId })
+            const activeIndex = findIndex(columns, activeId)
+            const overIndex = findIndex(columns, overId)
             return arrayMove(columns, activeIndex, overIndex)
         })
     }
@@ -84,33 +121,69 @@ const KanbanBoard = () => {
             return;
         };
 
+        //Исключает ошибку если перетаскивать доску а не задачу
         if (!isActiveTask) {
             return;
         }
 
-        //Перенос задач в НЕ ПУСТУЮ доску
-        if (isActiveTask === isOverTask) {
-            setTasks((tasks) => {
-                const activeIndex = tasks.findIndex((tasks) => { return tasks.id === activeId })
-                const overIndex = tasks.findIndex((tasks) => { return tasks.id === overId })
+        //Перемещение задачи в рамках одной доски
+        if (isActiveTask === isOverTask && active.data.current?.task.columnId === over.data.current?.task.columnId) {
+            const updatedColumn = [...columns]
+            const activeColumn = findItem(active.data.current?.task.columnId, 'Column')
 
-                tasks[activeIndex].columnId = tasks[overIndex].columnId
+            if (activeColumn) {
+                const activeColumnIndex = findIndex(updatedColumn, activeColumn.id)
+                const activeIndex = findIndex(activeColumn.tasks, activeId)
+                const overIndex = findIndex(activeColumn.tasks, overId)
 
-                return arrayMove(tasks, activeIndex, overIndex)
-            })
+                updatedColumn[activeColumnIndex].tasks = arrayMove(activeColumn.tasks, activeIndex, overIndex)
+
+                setColumns(updatedColumn)
+            }
         }
 
-        //Перенос задачи в ПУСТУЮ доску
+        //Перенос задачи в другую доску поверх другой задачи
+        if (isActiveTask && isOverTask && active.data.current?.task.columnId !== over.data.current?.task.columnId) {
+            const updatedColumns = [...columns]
+            const activeColumn = findItem(active.data.current?.task.columnId, 'Column')
+            const overColumn = findItem(over.data.current?.task.columnId, 'Column')
+
+            if (activeColumn && overColumn) {
+                const activeColumnIndex = findIndex(updatedColumns, activeColumn.id)
+                const overColumnIndex = findIndex(updatedColumns, overColumn.id)
+
+                const activeTaskIndex = findIndex(activeColumn.tasks, activeId)
+                const overTaskIndex = findIndex(overColumn.tasks, overId)
+
+                const [removedTask] = updatedColumns[activeColumnIndex].tasks.splice(activeTaskIndex, 1)
+                removedTask.columnId = overColumn.id
+
+                updatedColumns[overColumnIndex].tasks.splice(overTaskIndex, 0, removedTask)
+
+                setColumns(updatedColumns)
+            }
+        }
+
+        //Перенос задачи поверх доски или в пустую доску
         const isOverColumn = over.data.current?.type === 'Column'
+        if (isActiveTask && isOverColumn && active.data.current?.task.columnId !== overId) {
+            const updatedColumns = [...columns]
+            const activeColumn = findItem(active.data.current?.task.columnId, 'Column')
+            const overColumn = findItem(overId, 'Column')
 
-        if (isActiveTask && isOverColumn) {
-            setTasks((tasks) => {
-                const activeIndex = tasks.findIndex((tasks) => { return tasks.id === activeId })
+            if (activeColumn && overColumn) {
+                const activeColumnIndex = findIndex(updatedColumns, activeColumn.id)
+                const overColumnIndex = findIndex(updatedColumns, overColumn.id)
 
-                tasks[activeIndex].columnId = overId
+                const activeTaskIndex = findIndex(activeColumn.tasks, activeId)
 
-                return arrayMove(tasks, activeIndex, activeIndex)
-            })
+                const [removedTask] = updatedColumns[activeColumnIndex].tasks.splice(activeTaskIndex, 1)
+                removedTask.columnId = overColumn.id
+
+                updatedColumns[overColumnIndex].tasks.push(removedTask)
+
+                setColumns(updatedColumns)
+            }
         }
     }
 
@@ -118,7 +191,8 @@ const KanbanBoard = () => {
     const handleCreateColumn = () => {
         const newColumn: IColumn = {
             id: idGenerator(),
-            title: `Доска ${columns.length + 1}`
+            title: `Доска ${columns.length + 1}`,
+            tasks: []
         }
         setColumns([...columns, newColumn])
     }
@@ -131,8 +205,8 @@ const KanbanBoard = () => {
             })
         })
 
-        const newTask = tasks.filter((task) => task.columnId !== id)
-        setTasks(newTask)
+        // const newTask = tasks.filter((task) => task.columnId !== id)
+        // setTasks(newTask)
     }
 
     //Редактирование заголовка доски
@@ -151,29 +225,53 @@ const KanbanBoard = () => {
         const newTask: ITask = {
             id: idGenerator(),
             columnId: columnId,
-            content: `Задача ${tasks.length + 1}`
+            content: ''
         }
-        setTasks([...tasks, newTask])
+        setColumns((columns) => {
+            return columns.map((column) => {
+                if (column.id !== columnId) {
+                    return column;
+                };
+                column.tasks.push(newTask)
+                return column
+            })
+        })
     }
 
     //Удаление задачи
-    const handleDeleteTask = (id: TId) => {
-        console.log(id);
-
-        setTasks((tasks) => {
-            return tasks.filter((task) => task.id !== id)
+    const handleDeleteTask = (columnId: TId, taskId: TId) => {
+        setColumns((columns) => {
+            return columns.map((column) => {
+                if (column.id !== columnId) {
+                    return column
+                }
+                return {
+                    ...column, tasks: column.tasks.filter((task) => {
+                        return task.id !== taskId
+                    })
+                }
+            })
         })
     }
 
     //Редактирование описания задачи
-    const handleChangeTask = (content: string, id: TId) => {
-        const editedTask = tasks.map((task) => {
-            if (task.id !== id) {
-                return task
-            }
-            return { ...task, content: content }
+    const handleChangeTask = (columnId: TId, content: string, id: TId) => {
+        setColumns((columns) => {
+            return columns.map((column) => {
+                if (column.id !== columnId) {
+                    return column;
+                }
+
+                const editedTask = column.tasks.map((task) => {
+                    if (task.id !== id) {
+                        return task
+                    }
+                    return { ...task, content: content }
+                })
+
+                return { ...column, tasks: editedTask }
+            })
         })
-        setTasks(editedTask)
     }
 
     return (
@@ -184,14 +282,15 @@ const KanbanBoard = () => {
             flex items-center gap-5
             overflow-x-auto overflow-y-hidden
             ">
-            <div className="flex gap-x-5">
-                {/*Контекст для работы dnd-kit*/}
-                <DndContext
-                    sensors={sensors}
-                    onDragStart={onDragStart}
-                    onDragEnd={onDragEnd}
-                    onDragOver={onDragOver}
-                >
+            {/*Контекст для работы dnd-kit*/}
+            <DndContext
+                sensors={sensors}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+                onDragOver={onDragOver}
+                collisionDetection={closestCorners}
+            >
+                <div className="flex gap-x-5">
                     {/*Контекст который предоставляет данные для useSortable*/}
                     <SortableContext items={columnsId}>
                         {Boolean(columns.length) && columns.map(column => (
@@ -201,7 +300,6 @@ const KanbanBoard = () => {
                                 deleteColumn={handleDeleteColumn}
                                 changeTitle={handleChangeTitle}
                                 createTask={handleCreateTask}
-                                tasks={tasks.filter((task) => { return task.columnId === column.id })}
                                 deleteTask={handleDeleteTask}
                                 changeTask={handleChangeTask}
                             />
@@ -212,30 +310,21 @@ const KanbanBoard = () => {
                         createPortal(
                             <DragOverlay>
                                 {/*Создани оверлея активной доски - доска с контентом а не заглушка!!!*/}
-                                {activeColumn && <Column
-                                    key={activeColumn.id}
-                                    column={activeColumn}
-                                    deleteColumn={handleDeleteColumn}
-                                    changeTitle={handleChangeTitle}
-                                    createTask={handleCreateTask}
-                                    tasks={tasks.filter((task) => { return task.columnId === activeColumn.id })}
-                                    deleteTask={handleDeleteTask}
-                                    changeTask={handleChangeTask}
-                                />}
+                                {activeColumn &&
+                                    <ColumnOverlay
+                                        key={activeColumn.id}
+                                        column={activeColumn}
+                                        tasks={activeColumn.tasks.filter((task) => { return task.columnId === activeColumn.id })}
+                                    />
+                                }
 
                                 {/*Создани оверлея активной задачи - задача с контентом а не заглушка!!!*/}
-                                {activeTask && <Task
-                                    key={activeTask.id}
-                                    task={activeTask}
-                                    deleteTask={handleDeleteTask}
-                                    changeTask={handleChangeTask}
-                                />}
+                                {activeTask && <TaskOverlay key={activeTask.id} task={activeTask} />}
                             </DragOverlay>,
                             document.body
                         )}
-
-                </DndContext>
-            </div>
+                </div>
+            </DndContext>
 
             <div className="m-auto">
                 <button
