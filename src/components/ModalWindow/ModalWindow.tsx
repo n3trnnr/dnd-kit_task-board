@@ -73,7 +73,7 @@ const ModalWindow = ({ createColumn, showModal, createTask, isModal }: IModalWin
                     w-full 
                     px-5 rounded-md 
                     bg-main-bg-color
-                    ring-rose-500 hover:ring-2
+                    ring-sky-500 hover:ring-2
                     cursor-pointer
                 "
                     type="button" value="Отменить" />

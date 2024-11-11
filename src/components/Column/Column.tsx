@@ -6,7 +6,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import Task from "../Task/Task";
 
-const Column = ({ column, deleteColumn, changeTitle, handleCurrentColumnId, deleteTask, changeTask, showModal }: IColumnProps) => {
+const Column = ({ column, deleteColumn, changeTitle, handleCurrentColumnId, deleteTask, changeTask, showModal, setComplitingColumn }: IColumnProps) => {
 
     //Состояние для возможности отредактировать заголовок доски
     const [editMode, setEditMode] = useState(false)
@@ -97,7 +97,7 @@ const Column = ({ column, deleteColumn, changeTitle, handleCurrentColumnId, dele
                 flex justify-center items-center gap-x-3
                 cursor-default
                 ">
-                    <div className="size-3 rounded-full bg-green-500"></div>
+                    <div onClick={() => setComplitingColumn(column.id)} className={`cursor-pointer ${column.isCompleted ? "size-5 rounded-full bg-sky-500" : "size-5 rounded-full bg-board-bg-color"}`} />
                     <div className="flex justify-center items-center">{column.tasks.length}</div>
 
                     {/*Условие для редактирование заголовка и отображение заголовка*/}
@@ -140,7 +140,7 @@ const Column = ({ column, deleteColumn, changeTitle, handleCurrentColumnId, dele
                 </SortableContext>
             </div>
 
-            <div
+            {!column.isCompleted && <div
                 onClick={() => {
                     handleCurrentColumnId(column.id)
                     showModal({ type: 'task', active: true })
@@ -159,7 +159,7 @@ const Column = ({ column, deleteColumn, changeTitle, handleCurrentColumnId, dele
                 <button className="flex justify-between items-center gap-x-2">
                     <Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить задачу
                 </button>
-            </div>
+            </div>}
 
         </div>
     );

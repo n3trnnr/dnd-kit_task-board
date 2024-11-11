@@ -30,6 +30,7 @@ const ColumnOverlay = ({ column, tasks }: IColumnOverlayProps) => {
             text-md font-bold
             flex justify-center items-center gap-x-3
             ">
+                    <div className={`${column.isCompleted ? "size-5 rounded-full bg-sky-500" : "size-5 rounded-full bg-board-bg-color"}`} />
                     <div className="flex justify-center items-center">{tasks.length}</div>
                     {column.title}
                 </h3>
@@ -53,7 +54,7 @@ const ColumnOverlay = ({ column, tasks }: IColumnOverlayProps) => {
                 ))}
             </div>
 
-            <div
+            {!column.isCompleted && <div
                 className="
             flex justify-center            
             w-full 
@@ -68,7 +69,7 @@ const ColumnOverlay = ({ column, tasks }: IColumnOverlayProps) => {
                 <button className="flex justify-between items-center gap-x-2">
                     <Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить задачу
                 </button>
-            </div>
+            </div>}
 
         </div>
     );

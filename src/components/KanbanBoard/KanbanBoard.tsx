@@ -234,9 +234,33 @@ const KanbanBoard = () => {
         setColumns(editedColumnTitle)
     }
 
+    //Получение id колонки для создания новой задачи
     const handleCurrentColumnId = (columnsId: TId) => {
         if (columnsId) {
             setCurrentColumnId(columnsId)
+        }
+    }
+
+    //Установка доски для завершенных колонок
+    const setComplitingColumn = (columnId: TId) => {
+        const updatedColumn = [...columns]
+
+        if (columnId) {
+            const complitingColumn = updatedColumn.find((column) => {
+                return column.id === columnId
+            })
+
+            if (complitingColumn) {
+
+                updatedColumn.forEach((column) => {
+                    if ('isCompleted' in column) {
+                        column.isCompleted = false
+                    }
+                })
+
+                complitingColumn.isCompleted = true
+            }
+            setColumns(updatedColumn)
         }
     }
 
@@ -340,6 +364,7 @@ const KanbanBoard = () => {
                                         deleteTask={handleDeleteTask}
                                         changeTask={handleChangeTask}
                                         showModal={setIsModal}
+                                        setComplitingColumn={setComplitingColumn}
                                     />
                                 ))}
                             </SortableContext>
