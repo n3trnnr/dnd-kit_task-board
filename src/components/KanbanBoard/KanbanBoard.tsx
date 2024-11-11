@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { IColumn, ITask, TId } from "../../types/types";
+import { IColumn, IFormData, ITask, TId } from "../../types/types";
 import Column from "../Column/Column";
 import Icons from "../UI/Icons";
 import styles from './KanbanBoard.module.css'
@@ -11,12 +11,18 @@ import { idGenerator } from "../../helpers/idGenerator";
 import ColumnOverlay from "../ColumnOverlay/ColumnOverlay";
 import TaskOverlay from "../TaskOverlay/TaskOverlay";
 import { getStorage, setStorage } from "../../localStorage/localStorage";
+import Dashboard from "../Dashboard/Dashboard";
+import ModalWindow from "../ModalWindow/ModalWindow";
 
 const KanbanBoard = () => {
     const [columns, setColumns] = useState<IColumn[]>([])
 
     const [activeColumn, setActiveColumn] = useState<IColumn | null>(null)
     const [activeTask, setActiveTask] = useState<ITask | null>(null)
+
+    const [isModal, setIsModal] = useState<{ type: 'column' | 'task' | null, active: boolean }>({ type: null, active: false })
+
+    const [currentColumnId, setCurrentColumnId] = useState<TId | null>(null)
 
     const columnsId = useMemo(() => {
         return columns.map((column) => {
@@ -188,13 +194,21 @@ const KanbanBoard = () => {
     }
 
     //Создание доски
-    const handleCreateColumn = () => {
+    const handleCreateColumn = (formData: IFormData) => {
+
         const newColumn: IColumn = {
             id: idGenerator(),
-            title: `Доска ${columns.length + 1}`,
-            tasks: []
+            title: formData.description,
+            tasks: [],
         }
-        setColumns([...columns, newColumn])
+
+        if (formData.isCompleted && typeof formData.isCompleted === 'boolean') {
+            newColumn.isCompleted = formData.isCompleted
+        }
+
+        if (columns.length < 10) {
+            setColumns([...columns, newColumn])
+        }
     }
 
     //Удаление доски
@@ -220,22 +234,55 @@ const KanbanBoard = () => {
         setColumns(editedColumnTitle)
     }
 
-    //Создание новой задачи
-    const handleCreateTask = (columnId: TId) => {
-        const newTask: ITask = {
-            id: idGenerator(),
-            columnId: columnId,
-            content: ''
+    //Получение id колонки для создания новой задачи
+    const handleCurrentColumnId = (columnsId: TId) => {
+        if (columnsId) {
+            setCurrentColumnId(columnsId)
         }
-        setColumns((columns) => {
-            return columns.map((column) => {
-                if (column.id !== columnId) {
-                    return column;
-                };
-                column.tasks.push(newTask)
-                return column
+    }
+
+    //Установка доски для завершенных колонок
+    const setComplitingColumn = (columnId: TId) => {
+        const updatedColumn = [...columns]
+
+        if (columnId) {
+            const complitingColumn = updatedColumn.find((column) => {
+                return column.id === columnId
             })
-        })
+
+            if (complitingColumn) {
+
+                updatedColumn.forEach((column) => {
+                    if ('isCompleted' in column) {
+                        column.isCompleted = false
+                    }
+                })
+
+                complitingColumn.isCompleted = true
+            }
+            setColumns(updatedColumn)
+        }
+    }
+
+    //Создание новой задачи
+    const handleCreateTask = (formData: IFormData) => {
+
+        if (currentColumnId) {
+            const newTask: ITask = {
+                id: idGenerator(),
+                columnId: currentColumnId,
+                content: formData.description
+            }
+            setColumns((columns) => {
+                return columns.map((column) => {
+                    if (column.id !== currentColumnId) {
+                        return column;
+                    };
+                    column.tasks.push(newTask)
+                    return column
+                })
+            })
+        }
     }
 
     //Удаление задачи
@@ -275,75 +322,76 @@ const KanbanBoard = () => {
     }
 
     return (
-        <div className="
-            w-full min-h-screen
-            m-auto
-            px-[40px]
-            flex items-center gap-5
-            overflow-x-auto overflow-y-hidden
-            ">
-            {/*Контекст для работы dnd-kit*/}
-            <DndContext
-                sensors={sensors}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                onDragOver={onDragOver}
-                collisionDetection={closestCorners}
-            >
-                <div className="flex gap-x-5">
-                    {/*Контекст который предоставляет данные для useSortable*/}
-                    <SortableContext items={columnsId}>
-                        {Boolean(columns.length) && columns.map(column => (
-                            <Column
-                                key={column.id}
-                                column={column}
-                                deleteColumn={handleDeleteColumn}
-                                changeTitle={handleChangeTitle}
-                                createTask={handleCreateTask}
-                                deleteTask={handleDeleteTask}
-                                changeTask={handleChangeTask}
-                            />
-                        ))}
-                    </SortableContext>
+        <>
+            {isModal.active && <ModalWindow
+                createColumn={handleCreateColumn}
+                createTask={handleCreateTask}
+                showModal={setIsModal}
+                isModal={isModal}
+            />}
 
-                    {//createPortal - функция создает внепоточный реакт элемент встраиваемый в document.body
-                        createPortal(
-                            <DragOverlay>
-                                {/*Создани оверлея активной доски - доска с контентом а не заглушка!!!*/}
-                                {activeColumn &&
-                                    <ColumnOverlay
-                                        key={activeColumn.id}
-                                        column={activeColumn}
-                                        tasks={activeColumn.tasks.filter((task) => { return task.columnId === activeColumn.id })}
-                                    />
-                                }
+            <div className={isModal.active ? `${styles['main-container__blur']}` : `${styles['main-container']}`}>
 
-                                {/*Создани оверлея активной задачи - задача с контентом а не заглушка!!!*/}
-                                {activeTask && <TaskOverlay key={activeTask.id} task={activeTask} />}
-                            </DragOverlay>,
-                            document.body
-                        )}
+                <div className={`${columns.length > 0 ? 'flex justify-between items-start my-auto h-[150px]' : 'flex flex-col m-auto gap-10'}`}>
+                    {Boolean(columns.length) && <Dashboard columns={columns} />}
+
+                    <button
+                        onClick={() => setIsModal({ type: "column", active: true })}
+                        className={`${columns.length > 0 ? styles['button'] : styles['button-animation']}`}>
+                        <Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить колонку
+                    </button>
                 </div>
-            </DndContext>
 
-            <div className="m-auto">
-                <button
-                    onClick={handleCreateColumn}
-                    className="
-                    h-[60px] w-[350px] min-w-[350px]
-                    flex items-center justify-center gap-5
-                    p-4
-                    rounded-lg 
-                    bg-main-bg-color
-                    border-2 border-board-bg-color ring-rose-500
-                    hover:ring-2
-                    cursor-pointer
-                    ">
-                    <Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить доску
-                </button>
+                {Boolean(columns.length) && <div className="flex my-auto overflow-y-auto">
+                    {/*Контекст для работы dnd-kit*/}
+                    <DndContext
+                        sensors={sensors}
+                        onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
+                        onDragOver={onDragOver}
+                        collisionDetection={closestCorners}
+                    >
+                        <div className="flex gap-x-5 mb-5">
+                            {/*Контекст который предоставляет данные для useSortable*/}
+                            <SortableContext items={columnsId}>
+                                {Boolean(columns.length) && columns.map(column => (
+                                    <Column
+                                        key={column.id}
+                                        column={column}
+                                        deleteColumn={handleDeleteColumn}
+                                        changeTitle={handleChangeTitle}
+                                        handleCurrentColumnId={handleCurrentColumnId}
+                                        deleteTask={handleDeleteTask}
+                                        changeTask={handleChangeTask}
+                                        showModal={setIsModal}
+                                        setComplitingColumn={setComplitingColumn}
+                                    />
+                                ))}
+                            </SortableContext>
+
+                            {//createPortal - функция создает внепоточный реакт элемент встраиваемый в document.body
+                                createPortal(
+                                    <DragOverlay>
+                                        {/*Создани оверлея активной доски - доска с контентом а не заглушка!!!*/}
+                                        {activeColumn &&
+                                            <ColumnOverlay
+                                                key={activeColumn.id}
+                                                column={activeColumn}
+                                                tasks={activeColumn.tasks.filter((task) => { return task.columnId === activeColumn.id })}
+                                            />
+                                        }
+
+                                        {/*Создани оверлея активной задачи - задача с контентом а не заглушка!!!*/}
+                                        {activeTask && <TaskOverlay key={activeTask.id} task={activeTask} />}
+                                    </DragOverlay>,
+                                    document.body
+                                )}
+                        </div>
+                    </DndContext>
+                </div>}
+
             </div>
-
-        </div>
+        </>
     );
 }
 
