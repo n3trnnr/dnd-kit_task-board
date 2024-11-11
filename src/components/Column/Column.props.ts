@@ -5,8 +5,8 @@ export interface IColumnProps {
     isCompleted?: boolean
     deleteColumn: (id: TId) => void,
     changeTitle: (title: string, id: TId) => void,
-    createTask: (columnId: TId) => void
+    handleCurrentColumnId: (columnId: TId) => void
     deleteTask: (columnId: TId, taskId: TId) => void,
     changeTask: (columnId: TId, content: string, id: TId) => void,
-    showModal: (show: boolean) => void
+    showModal: ({ type, active }: { type: 'column' | 'task' | null, active: boolean }) => void
 }

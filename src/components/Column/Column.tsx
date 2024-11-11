@@ -6,7 +6,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import Task from "../Task/Task";
 
-const Column = ({ column, deleteColumn, changeTitle, createTask, deleteTask, changeTask, showModal }: IColumnProps) => {
+const Column = ({ column, deleteColumn, changeTitle, handleCurrentColumnId, deleteTask, changeTask, showModal }: IColumnProps) => {
 
     //Состояние для возможности отредактировать заголовок доски
     const [editMode, setEditMode] = useState(false)
@@ -97,6 +97,7 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, deleteTask, cha
                 flex justify-center items-center gap-x-3
                 cursor-default
                 ">
+                    <div className="size-3 rounded-full bg-green-500"></div>
                     <div className="flex justify-center items-center">{column.tasks.length}</div>
 
                     {/*Условие для редактирование заголовка и отображение заголовка*/}
@@ -104,7 +105,7 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, deleteTask, cha
                         <input
                             className="bg-board-bg-color focus: outline-rose-500 rounded-md outline-none font-normal px-2"
                             autoFocus
-                            onChange={(event) => changeTitle!(event.target.value, column.id)}
+                            onChange={(event) => changeTitle(event.target.value, column.id)}
                             value={column.title}
                             onBlur={() => setEditMode(false)}
                             onKeyDown={(event) => {
@@ -140,7 +141,10 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, deleteTask, cha
             </div>
 
             <div
-                onClick={() => createTask(column.id)}
+                onClick={() => {
+                    handleCurrentColumnId(column.id)
+                    showModal({ type: 'task', active: true })
+                }}
                 className="
                 flex justify-center            
                 w-full 
@@ -152,7 +156,7 @@ const Column = ({ column, deleteColumn, changeTitle, createTask, deleteTask, cha
                 hover:bg-main-bg-color hover:text-white
                 cursor-pointer
                 ">
-                <button onClick={() => showModal(true)} className="flex justify-between items-center gap-x-2">
+                <button className="flex justify-between items-center gap-x-2">
                     <Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить задачу
                 </button>
             </div>

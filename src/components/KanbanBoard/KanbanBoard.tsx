@@ -20,7 +20,9 @@ const KanbanBoard = () => {
     const [activeColumn, setActiveColumn] = useState<IColumn | null>(null)
     const [activeTask, setActiveTask] = useState<ITask | null>(null)
 
-    const [isModal, setIsModal] = useState(false)
+    const [isModal, setIsModal] = useState<{ type: 'column' | 'task' | null, active: boolean }>({ type: null, active: false })
+
+    const [currentColumnId, setCurrentColumnId] = useState<TId | null>(null)
 
     const columnsId = useMemo(() => {
         return columns.map((column) => {
@@ -232,22 +234,31 @@ const KanbanBoard = () => {
         setColumns(editedColumnTitle)
     }
 
-    //Создание новой задачи
-    const handleCreateTask = (columnId: TId) => {
-        const newTask: ITask = {
-            id: idGenerator(),
-            columnId: columnId,
-            content: ''
+    const handleCurrentColumnId = (columnsId: TId) => {
+        if (columnsId) {
+            setCurrentColumnId(columnsId)
         }
-        setColumns((columns) => {
-            return columns.map((column) => {
-                if (column.id !== columnId) {
-                    return column;
-                };
-                column.tasks.push(newTask)
-                return column
+    }
+
+    //Создание новой задачи
+    const handleCreateTask = (formData: IFormData) => {
+
+        if (currentColumnId) {
+            const newTask: ITask = {
+                id: idGenerator(),
+                columnId: currentColumnId,
+                content: formData.description
+            }
+            setColumns((columns) => {
+                return columns.map((column) => {
+                    if (column.id !== currentColumnId) {
+                        return column;
+                    };
+                    column.tasks.push(newTask)
+                    return column
+                })
             })
-        })
+        }
     }
 
     //Удаление задачи
@@ -286,18 +297,22 @@ const KanbanBoard = () => {
         })
     }
 
-
-
     return (
         <>
-            {isModal && <ModalWindow type="column" createColumn={handleCreateColumn} showModal={setIsModal} />}
-            <div className={isModal ? `${styles['main-container__blur']}` : `${styles['main-container']}`}>
+            {isModal.active && <ModalWindow
+                createColumn={handleCreateColumn}
+                createTask={handleCreateTask}
+                showModal={setIsModal}
+                isModal={isModal}
+            />}
 
-                <div className={`${columns.length > 0 ? 'flex justify-between items-center my-auto h-[60px]' : 'flex flex-col m-auto gap-10'}`}>
+            <div className={isModal.active ? `${styles['main-container__blur']}` : `${styles['main-container']}`}>
+
+                <div className={`${columns.length > 0 ? 'flex justify-between items-start my-auto h-[150px]' : 'flex flex-col m-auto gap-10'}`}>
                     {Boolean(columns.length) && <Dashboard columns={columns} />}
 
                     <button
-                        onClick={() => setIsModal(true)}
+                        onClick={() => setIsModal({ type: "column", active: true })}
                         className={`${columns.length > 0 ? styles['button'] : styles['button-animation']}`}>
                         <Icons iconName={'plus'} styles={`${styles['icon-plus']}`} /> Добавить колонку
                     </button>
@@ -321,7 +336,7 @@ const KanbanBoard = () => {
                                         column={column}
                                         deleteColumn={handleDeleteColumn}
                                         changeTitle={handleChangeTitle}
-                                        createTask={handleCreateTask}
+                                        handleCurrentColumnId={handleCurrentColumnId}
                                         deleteTask={handleDeleteTask}
                                         changeTask={handleChangeTask}
                                         showModal={setIsModal}
