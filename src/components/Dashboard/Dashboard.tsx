@@ -1,3 +1,4 @@
+import { summator } from "../../helpers/summator";
 import { IDashboard } from "./Dashboard.props";
 // import styles from './Dashboard.module.css'
 
@@ -25,6 +26,10 @@ const Dashboard = ({ columns }: IDashboard) => {
         return 0
     }
 
+    const tasksPriority = () => {
+        return summator(columns)
+    }
+
     const percentageCompletedTasks = () => {
         const percentage = Math.round((completedTasks() * 100) / tasksCount())
         if (Number.isNaN(percentage)) {
@@ -41,27 +46,58 @@ const Dashboard = ({ columns }: IDashboard) => {
         return percentage.toString()
     }
 
-
-
     return (
-        <div className="flex h-full justify-center items-center gap-x-5">
+        <div className="flex h-full justify-center items-center gap-x-[24px]">
 
-            <div className="w-[350px] h-full rounded-lg bg-board-bg-color flex justify-start items-end gap-x-[21px] p-5 overflow-hidden">
-                {columns.map((column) => (
-                    <div className='flex flex-col justify-center items-center' key={column.id}>
-                        <div className={`w-3 rounded-t-sm rounded-b-sm ${column.isCompleted ? 'bg-sky-500' : 'bg-rose-500'}`} style={{ height: `${column.tasks.length * 6}px` }}></div>
-                        {column.tasks.length}
-                    </div>
-                ))}
-            </div>
-
-            <div className="w-[350px] h-full flex justify-evenly items-center gap-2 p-5 rounded-lg bg-board-bg-color">
-                {tasksCount() === 0 ? 0 : <span>{percentageNotCompletedTasks()}%</span>}
-                <div className={`flex justify-end w-full h-3 rounded-sm ${tasksCount() === 0 ? 'bg-main-bg-color' : 'bg-rose-500'}`}>
-                    <div className={`h-3 rounded-sm bg-sky-500`} style={{ width: `${percentageCompletedTasks()}%` }} />
+            <div className="w-[350px] h-full rounded-lg bg-board-bg-color flex flex-col justify-between p-5 overflow-hidden">
+                <div>
+                    Колонки
                 </div>
-                {completedTasks() === 0 ? 0 : <span>{percentageCompletedTasks()}%</span>}
+                <div className="  flex justify-start items-end gap-x-[21px] ">
+                    {columns.map((column) => (
+                        <div className='flex flex-col justify-center items-center' key={column.id}>
+                            <div className={`w-3 rounded-t-sm rounded-b-sm ${column.isCompleted ? 'bg-sky-500' : 'bg-rose-500'}`} style={{ height: `${column.tasks.length * 6}px` }}></div>
+                            {column.tasks.length}
+                        </div>
+                    ))}
+                </div>
             </div>
+
+            <div className="w-[350px] h-full rounded-lg bg-board-bg-color flex flex-col justify-between p-5 overflow-hidden">
+                <div>
+                    Задачи для выполнения
+                </div>
+                <div className="  flex justify-between">
+                    <div className="flex flex-col items-center">
+                        <span className="text-[2rem]">{tasksPriority().low}</span>
+                        <span>Низкий</span>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                        <span className="text-[2rem]">{tasksPriority().med}</span>
+                        <span>Средний</span>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                        <span className="text-[2rem]">{tasksPriority().high}</span>
+                        <span>Высокий</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="w-[350px] h-full p-5 rounded-lg bg-board-bg-color flex flex-col justify-between ">
+                <div>
+                    Прогресс выполнения
+                </div>
+                <div className=" flex justify-evenly items-center gap-2 ">
+                    <span>{percentageNotCompletedTasks()}%</span>
+                    <div className={`flex justify-end w-full h-3 rounded-sm ${tasksCount() === 0 ? 'bg-main-bg-color' : 'bg-rose-500'}`}>
+                        <div className={`h-3 rounded-sm bg-sky-500`} style={{ width: `${percentageCompletedTasks()}%` }} />
+                    </div>
+                    <span>{percentageCompletedTasks()}%</span>
+                </div>
+            </div>
+
 
         </div>
     );

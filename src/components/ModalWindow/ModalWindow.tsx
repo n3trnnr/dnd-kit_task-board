@@ -25,8 +25,8 @@ const ModalWindow = ({ createColumn, showModal, createTask, isModal }: IModalWin
     return (
         <form
             onSubmit={handleSubmit}
-            className="
-        w-[400px] h-[180px] 
+            className={`
+        w-[400px] ${isModal.type === "column" ? 'h-[180px]' : 'h-[330px]'}
         flex flex-col justify-center items-center gap-y-5
         p-5 
         bg-board-bg-color 
@@ -34,8 +34,10 @@ const ModalWindow = ({ createColumn, showModal, createTask, isModal }: IModalWin
         absolute 
         z-10
         m-auto
-        left-0 right-0 top-0 bottom-0">
-            <input className="
+        left-0 right-0 top-0 bottom-0`}>
+
+            {
+                isModal.type === 'column' ? <input className="
                 h-[60px] w-full
                 board-bg-color focus:outline-rose-500 outline-none 
                 rounded-md
@@ -43,15 +45,60 @@ const ModalWindow = ({ createColumn, showModal, createTask, isModal }: IModalWin
                 bg-main-bg-color
                 px-5
                 "
-                type="text" name="description" placeholder="Описание" required
-            />
+                    type="text" name="description" placeholder="Описание" required
+                /> :
+                    <textarea
+                        className="
+                h-[130px] w-full
+                board-bg-color focus:outline-rose-500 outline-none 
+                rounded-md
+                font-normal px-2px] 
+                bg-main-bg-color
+                p-5
+                resize-none
+                "
+                        name="description" placeholder="Описание" required
+                    >
 
-            {/* {type === 'column' && <div className="flex justify-evenly items-center w-full h-[60px] rounded-md bg-main-bg-color">
+                    </textarea>
+            }
 
-                <input className="size-5 accent-rose-500" type="checkbox" name="isCompleted" />
-                <input className="size-5 accent-rose-500" type="checkbox" name="isCompleted" />
-                <input className="size-5 accent-rose-500" type="checkbox" name="isCompleted" />
-            </div>} */}
+            {
+                isModal.type === 'task' && <div
+                    className="
+                flex justify-evenly items-center gap-x-5 w-full h-[60px] rounded-lg bg-main-bg-color
+                ">
+                    <label className="flex justify-center items-center gap-2">
+                        Низкий
+                        <input className="
+                        size-5 rounded-full accent-rose-500 cursor-pointer
+                        "
+                            type="radio" name="priority" defaultValue='Низкий' defaultChecked
+                        />
+                    </label>
+
+
+                    <label className="flex justify-center items-center gap-2">
+                        Средний
+                        <input className="
+                        size-5 rounded-full accent-rose-500 cursor-pointer
+                        "
+                            type="radio" name="priority" defaultValue='Средний'
+                        />
+                    </label>
+
+
+                    <label className="flex justify-center items-center gap-2">
+                        Высокий
+                        <input className="
+                        size-5 rounded-full accent-rose-500 cursor-pointer
+                        "
+                            type="radio" name="priority" defaultValue='Высокий'
+                        />
+                    </label>
+
+                </div>
+            }
 
             <div className="w-full flex justify-between gap-5">
                 <button

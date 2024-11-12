@@ -9,7 +9,7 @@
 
 .main-container,
 .main-container__blur {
-    @apply w-full min-h-screen flex flex-col gap-y-5 px-[40px] relative
+    @apply w-full min-h-screen flex flex-col gap-y-5 px-[30px] pt-5 relative
 }
 
 .main-container__blur {

@@ -13,9 +13,12 @@ export interface ITask {
     id: TId,
     columnId: TId,
     content: string,
+    priority: 'Низкий' | 'Средний' | 'Высокий',
+    creationDate: string
 }
 
 export interface IFormData {
     description: string,
+    priority?: 'Низкий' | 'Средний' | 'Высокий'
     isCompleted?: string | boolean
 }

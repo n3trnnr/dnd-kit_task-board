@@ -267,11 +267,13 @@ const KanbanBoard = () => {
     //Создание новой задачи
     const handleCreateTask = (formData: IFormData) => {
 
-        if (currentColumnId) {
+        if (currentColumnId && formData.priority) {
             const newTask: ITask = {
                 id: idGenerator(),
                 columnId: currentColumnId,
-                content: formData.description
+                content: formData.description,
+                priority: formData.priority,
+                creationDate: new Date().toLocaleDateString()
             }
             setColumns((columns) => {
                 return columns.map((column) => {
@@ -351,7 +353,7 @@ const KanbanBoard = () => {
                         onDragOver={onDragOver}
                         collisionDetection={closestCorners}
                     >
-                        <div className="flex gap-x-5 mb-5">
+                        <div className="flex gap-x-[24px] mb-[10px]">
                             {/*Контекст который предоставляет данные для useSortable*/}
                             <SortableContext items={columnsId}>
                                 {Boolean(columns.length) && columns.map(column => (
