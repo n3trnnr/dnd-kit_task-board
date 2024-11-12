@@ -1,3 +1,4 @@
+import { summator } from "../../helpers/summator";
 import { IDashboard } from "./Dashboard.props";
 // import styles from './Dashboard.module.css'
 
@@ -25,6 +26,10 @@ const Dashboard = ({ columns }: IDashboard) => {
         return 0
     }
 
+    const tasksPriority = () => {
+        return summator(columns)
+    }
+
     const percentageCompletedTasks = () => {
         const percentage = Math.round((completedTasks() * 100) / tasksCount())
         if (Number.isNaN(percentage)) {
@@ -41,14 +46,12 @@ const Dashboard = ({ columns }: IDashboard) => {
         return percentage.toString()
     }
 
-
-
     return (
         <div className="flex h-full justify-center items-center gap-x-[24px]">
 
             <div className="w-[350px] h-full rounded-lg bg-board-bg-color flex flex-col justify-between p-5 overflow-hidden">
                 <div>
-                    Колонки и задачи
+                    Колонки
                 </div>
                 <div className="  flex justify-start items-end gap-x-[21px] ">
                     {columns.map((column) => (
@@ -60,9 +63,31 @@ const Dashboard = ({ columns }: IDashboard) => {
                 </div>
             </div>
 
+            <div className="w-[350px] h-full rounded-lg bg-board-bg-color flex flex-col justify-between p-5 overflow-hidden">
+                <div>
+                    Задачи для выполнения
+                </div>
+                <div className="  flex justify-between">
+                    <div className="flex flex-col items-center">
+                        <span className="text-[2rem]">{tasksPriority().low}</span>
+                        <span>Низкий</span>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                        <span className="text-[2rem]">{tasksPriority().med}</span>
+                        <span>Средний</span>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                        <span className="text-[2rem]">{tasksPriority().high}</span>
+                        <span>Высокий</span>
+                    </div>
+                </div>
+            </div>
+
             <div className="w-[350px] h-full p-5 rounded-lg bg-board-bg-color flex flex-col justify-between ">
                 <div>
-                    Прогресс
+                    Прогресс выполнения
                 </div>
                 <div className=" flex justify-evenly items-center gap-2 ">
                     <span>{percentageNotCompletedTasks()}%</span>

@@ -267,11 +267,13 @@ const KanbanBoard = () => {
     //Создание новой задачи
     const handleCreateTask = (formData: IFormData) => {
 
-        if (currentColumnId) {
+        if (currentColumnId && formData.priority) {
             const newTask: ITask = {
                 id: idGenerator(),
                 columnId: currentColumnId,
-                content: formData.description
+                content: formData.description,
+                priority: formData.priority,
+                creationDate: new Date().toLocaleDateString()
             }
             setColumns((columns) => {
                 return columns.map((column) => {
