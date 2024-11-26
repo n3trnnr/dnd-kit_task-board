@@ -5,7 +5,6 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useState } from "react";
 
-
 const Task = ({ task, deleteTask, changeTask }: ITaskProps) => {
 
     const [editMode, setEditMode] = useState(false)
@@ -22,7 +21,7 @@ const Task = ({ task, deleteTask, changeTask }: ITaskProps) => {
         listeners,
         transform,
         transition,
-        isDragging
+        isDragging,
     } = useSortable({
         id: task.id,
         data: {

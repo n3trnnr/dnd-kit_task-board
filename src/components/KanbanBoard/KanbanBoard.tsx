@@ -4,7 +4,7 @@ import Column from "../Column/Column";
 import Icons from "../UI/Icons";
 import styles from './KanbanBoard.module.css'
 
-import { closestCorners, DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent, MouseSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
 import { idGenerator } from "../../helpers/idGenerator";
@@ -13,22 +13,17 @@ import TaskOverlay from "../TaskOverlay/TaskOverlay";
 import { getStorage, setStorage } from "../../localStorage/localStorage";
 import Dashboard from "../Dashboard/Dashboard";
 import ModalWindow from "../ModalWindow/ModalWindow";
+import Task from "../Task/Task";
 
 const KanbanBoard = () => {
     const [columns, setColumns] = useState<IColumn[]>([])
-
+    console.log('render')
     const [activeColumn, setActiveColumn] = useState<IColumn | null>(null)
     const [activeTask, setActiveTask] = useState<ITask | null>(null)
 
     const [isModal, setIsModal] = useState<{ type: 'column' | 'task' | null, active: boolean }>({ type: null, active: false })
 
     const [currentColumnId, setCurrentColumnId] = useState<TId | null>(null)
-
-    const columnsId = useMemo(() => {
-        return columns.map((column) => {
-            return column.id
-        })
-    }, [columns])
 
     useEffect(() => {
         const data = getStorage('columns')
@@ -42,7 +37,7 @@ const KanbanBoard = () => {
     }, [columns])
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {//Решение проблемы с удалением доски
+        useSensor(MouseSensor, {//Решение проблемы с удалением доски
             activationConstraint: {
                 distance: 3, // Расстояние на которое должна переместиться доска чтобы активироваться,
             }
@@ -101,7 +96,6 @@ const KanbanBoard = () => {
             return;
         }
 
-
         setColumns((columns) => {
             const activeIndex = findIndex(columns, activeId)
             const overIndex = findIndex(columns, overId)
@@ -134,21 +128,21 @@ const KanbanBoard = () => {
 
         //Перемещение задачи в рамках одной доски
         if (isActiveTask === isOverTask && active.data.current?.task.columnId === over.data.current?.task.columnId) {
-            const updatedColumn = [...columns]
+            const updatedColumns = [...columns]
             const activeColumn = findItem(active.data.current?.task.columnId, 'Column')
 
             if (activeColumn) {
-                const activeColumnIndex = findIndex(updatedColumn, activeColumn.id)
+                const activeColumnIndex = findIndex(updatedColumns, activeColumn.id)
                 const activeIndex = findIndex(activeColumn.tasks, activeId)
                 const overIndex = findIndex(activeColumn.tasks, overId)
 
-                updatedColumn[activeColumnIndex].tasks = arrayMove(activeColumn.tasks, activeIndex, overIndex)
+                updatedColumns[activeColumnIndex].tasks = arrayMove(activeColumn.tasks, activeIndex, overIndex)
 
-                setColumns(updatedColumn)
+                setColumns(updatedColumns)
             }
         }
 
-        //Перенос задачи в другую доску поверх другой задачи
+        // Перенос задачи в другую доску поверх другой задачи
         if (isActiveTask && isOverTask && active.data.current?.task.columnId !== over.data.current?.task.columnId) {
             const updatedColumns = [...columns]
             const activeColumn = findItem(active.data.current?.task.columnId, 'Column')
@@ -349,13 +343,12 @@ const KanbanBoard = () => {
                     <DndContext
                         sensors={sensors}
                         onDragStart={onDragStart}
-                        onDragEnd={onDragEnd}
                         onDragOver={onDragOver}
-                        collisionDetection={closestCorners}
+                        onDragEnd={onDragEnd}
                     >
                         <div className="flex gap-x-[24px] mb-[10px]">
                             {/*Контекст который предоставляет данные для useSortable*/}
-                            <SortableContext items={columnsId}>
+                            <SortableContext items={columns.map((column) => column.id)}>
                                 {Boolean(columns.length) && columns.map(column => (
                                     <Column
                                         key={column.id}
@@ -363,11 +356,20 @@ const KanbanBoard = () => {
                                         deleteColumn={handleDeleteColumn}
                                         changeTitle={handleChangeTitle}
                                         handleCurrentColumnId={handleCurrentColumnId}
-                                        deleteTask={handleDeleteTask}
-                                        changeTask={handleChangeTask}
                                         showModal={setIsModal}
                                         setComplitingColumn={setComplitingColumn}
-                                    />
+                                    >
+                                        <SortableContext items={column.tasks.map((task) => task.id)}>
+                                            {Boolean(column.tasks.length) && column.tasks.map((task) => (
+                                                <Task
+                                                    key={task.id}
+                                                    task={task}
+                                                    deleteTask={handleDeleteTask}
+                                                    changeTask={handleChangeTask}
+                                                />
+                                            ))}
+                                        </SortableContext>
+                                    </Column>
                                 ))}
                             </SortableContext>
 

@@ -1,22 +1,14 @@
 import Icons from "../UI/Icons";
 import { IColumnProps } from "./Column.props";
 import styles from './Column.module.css'
-import { SortableContext, useSortable } from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useMemo, useState } from "react";
-import Task from "../Task/Task";
+import { useState } from "react";
 
-const Column = ({ column, deleteColumn, changeTitle, handleCurrentColumnId, deleteTask, changeTask, showModal, setComplitingColumn }: IColumnProps) => {
+const Column = ({ column, deleteColumn, changeTitle, handleCurrentColumnId, showModal, setComplitingColumn, children }: IColumnProps) => {
 
     //Состояние для возможности отредактировать заголовок доски
     const [editMode, setEditMode] = useState(false)
-
-    const tasksId = useMemo(() => {
-        return column.tasks.map((task) => {
-            return task.id
-        })
-    }, [column.tasks])
-
 
     const {
         setNodeRef,
@@ -128,16 +120,7 @@ const Column = ({ column, deleteColumn, changeTitle, handleCurrentColumnId, dele
             </div>
 
             <div className="flex flex-grow flex-col gap-5 overflow-x-hidden overflow-y-auto p-2 w-full">
-                <SortableContext items={tasksId}>
-                    {Boolean(column.tasks.length) && column.tasks.map((task) => (
-                        <Task
-                            key={task.id}
-                            task={task}
-                            deleteTask={deleteTask}
-                            changeTask={changeTask}
-                        />
-                    ))}
-                </SortableContext>
+                {children}
             </div>
 
             {!column.isCompleted && <div
